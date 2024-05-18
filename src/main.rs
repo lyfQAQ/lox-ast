@@ -1,4 +1,8 @@
-use std::io::{BufRead, Read};
+use std::io::Read;
+
+mod token;
+
+static mut HAD_ERROR: bool = false;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -19,6 +23,9 @@ fn run_file(path: &str) {
     file.read_to_string(&mut content)
         .expect("Error: read file content");
     run(content);
+    if unsafe { HAD_ERROR } {
+        std::process::exit(65);
+    }
 }
 
 fn run_prompt() {
@@ -29,6 +36,9 @@ fn run_prompt() {
             break;
         }
         run(line);
+        unsafe {
+            HAD_ERROR = false;
+        }
         print!("> ");
     }
 }
@@ -36,5 +46,26 @@ fn run_prompt() {
 fn run(source: String) {
     for token in source.split_whitespace() {
         println!("{token}");
+    }
+}
+
+fn error(line: u32, message: String) {
+    report(line, String::new(), message);
+}
+
+fn report(line: u32, position: String, message: String) {
+    eprintln!("[line {}] Error {}: {}", line, position, message);
+    unsafe {
+        HAD_ERROR = true;
+    }
+}
+
+struct Lox {
+    had_error: bool,
+}
+
+impl Lox {
+    fn new() -> Self {
+        Self { had_error: false }
     }
 }
