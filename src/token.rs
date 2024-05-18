@@ -5,7 +5,7 @@ pub enum TokenType {
     RightParen,
     LeftBrace,
     RightBrace,
-    CommA,
+    Comma,
     Dot,
     Minus,
     Pluse,
@@ -69,11 +69,11 @@ pub struct Token {
     kind: TokenType,
     lexeme: String,
     literal: Option<Literal>,
-    line: u32,
+    line: usize,
 }
 
 impl Token {
-    pub fn new(kind: TokenType, lexeme: String, literal: Option<Literal>, line: u32) -> Self {
+    pub fn new(kind: TokenType, lexeme: String, literal: Option<Literal>, line: usize) -> Self {
         Self {
             kind,
             lexeme,
