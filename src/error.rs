@@ -4,7 +4,7 @@ pub struct LoxError {
 }
 
 impl LoxError {
-    pub fn error(line: usize, message: String) -> Self {
+    pub fn new(line: usize, message: String) -> Self {
         Self { line, message }
     }
 

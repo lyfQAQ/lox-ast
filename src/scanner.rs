@@ -57,64 +57,78 @@ impl Scanner {
         let c: char = self.source[self.current as usize];
         self.current += 1;
         match c {
-            '(' => self.add_token(TokenType::LeftParen),
-            ')' => self.add_token(TokenType::RightParen),
-            '{' => self.add_token(TokenType::LeftBrace),
-            '}' => self.add_token(TokenType::RightBrace),
-            ',' => self.add_token(TokenType::Comma),
-            '.' => self.add_token(TokenType::Dot),
-            '+' => self.add_token(TokenType::Pluse),
-            '-' => self.add_token(TokenType::Minus),
-            '*' => self.add_token(TokenType::Star),
-            ';' => self.add_token(TokenType::Semicolon),
+            '(' => self.add_token(TokenType::LeftParen, Literal::Empty),
+            ')' => self.add_token(TokenType::RightParen, Literal::Empty),
+            '{' => self.add_token(TokenType::LeftBrace, Literal::Empty),
+            '}' => self.add_token(TokenType::RightBrace, Literal::Empty),
+            ',' => self.add_token(TokenType::Comma, Literal::Empty),
+            '.' => self.add_token(TokenType::Dot, Literal::Empty),
+            '+' => self.add_token(TokenType::Pluse, Literal::Empty),
+            '-' => self.add_token(TokenType::Minus, Literal::Empty),
+            '*' => self.add_token(TokenType::Star, Literal::Empty),
+            ';' => self.add_token(TokenType::Semicolon, Literal::Empty),
             '!' => {
-                let tkt = if self.next_is('=') {
+                let tkt = if self.match_next('=') {
                     TokenType::BangEqual
                 } else {
                     TokenType::Bang
                 };
-                self.add_token(tkt);
+                self.add_token(tkt, Literal::Empty);
             }
             '=' => {
-                let tkt = if self.next_is('=') {
+                let tkt = if self.match_next('=') {
                     TokenType::EqualEqual
                 } else {
                     TokenType::Equal
                 };
-                self.add_token(tkt);
+                self.add_token(tkt, Literal::Empty);
             }
             '<' => {
-                let tkt = if self.next_is('=') {
+                let tkt = if self.match_next('=') {
                     TokenType::LessEqual
                 } else {
                     TokenType::Less
                 };
-                self.add_token(tkt);
+                self.add_token(tkt, Literal::Empty);
             }
             '>' => {
-                let tkt = if self.next_is('=') {
+                let tkt = if self.match_next('=') {
                     TokenType::GreaterEqual
                 } else {
                     TokenType::Greater
                 };
-                self.add_token(tkt);
+                self.add_token(tkt, Literal::Empty);
             }
-            _ => {
-                return Err(LoxError::error(
-                    self.line,
-                    "Unexpected character".to_string(),
-                ))
+            '/' => {
+                if self.match_next('/') {
+                    // 注释行
+                    while self.peek() != '\n' && !self.is_end() {
+                        self.current += 1;
+                    }
+                } else {
+                    self.add_token(TokenType::Slash, Literal::Empty);
+                }
             }
+            '\n' => self.line += 1, // '\n'也是 whitespace
+            c if c.is_ascii_whitespace() => {}
+            '"' => self.match_string()?,
+            c if c.is_numeric() => self.match_number()?,
+            _ => return Err(LoxError::new(self.line, "Unexpected character".to_string())),
         }
         Ok(())
     }
 
-    fn add_token(&mut self, kind: TokenType) {
+    fn add_token(&mut self, kind: TokenType, literal: Literal) {
         let text: String = self.source[self.start..self.current].iter().collect();
-        self.tokens.push(Token::new(kind, text, None, self.line));
+
+        let literal = match literal {
+            Literal::Empty => None,
+            l => Some(l),
+        };
+        self.tokens.push(Token::new(kind, text, literal, self.line));
     }
 
-    fn next_is(&mut self, expected: char) -> bool {
+    fn match_next(&mut self, expected: char) -> bool {
         if self.is_end() {
             return false;
         }
@@ -123,5 +137,61 @@ impl Scanner {
         }
         self.current += 1;
         true
+    }
+
+    fn peek(&self) -> char {
+        if self.is_end() {
+            '\0'
+        } else {
+            self.source[self.current]
+        }
+    }
+    fn peek_next(&self) -> char {
+        if self.current + 1 >= self.source.len() {
+            '\0'
+        } else {
+            self.source[self.current + 1]
+        }
+    }
+
+    fn match_string(&mut self) -> Result<(), LoxError> {
+        while self.peek() != '"' && !self.is_end() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+            self.current += 1;
+        }
+        if self.is_end() {
+            return Err(LoxError::new(self.line, "Unterminated string".to_string()));
+        }
+        self.current += 1; // 最后的'""
+                           // 只拿双引号之间的字符
+        let value: String = self.source[self.start + 1..self.current - 1]
+            .iter()
+            .collect();
+
+        self.add_token(TokenType::String, Literal::Str(value));
+        Ok(())
+    }
+
+    fn match_number(&mut self) -> Result<(), LoxError> {
+        while self.peek().is_numeric() {
+            self.current += 1;
+        }
+        if self.peek() == '.' && self.peek_next().is_numeric() {
+            // 略过小数点
+            self.current += 1;
+            // 处理小数
+            while self.peek().is_numeric() {
+                self.current += 1;
+            }
+        }
+        let num: f64 = self.source[self.start..self.current]
+            .iter()
+            .collect::<String>()
+            .parse()
+            .expect("Error: Parse f64");
+        self.add_token(TokenType::Number, Literal::Num(num));
+        Ok(())
     }
 }

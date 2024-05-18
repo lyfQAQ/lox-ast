@@ -51,6 +51,8 @@ pub enum Literal {
     Nil,
     True,
     False,
+    // 非字面量
+    Empty,
 }
 
 impl std::fmt::Display for Literal {
@@ -61,6 +63,7 @@ impl std::fmt::Display for Literal {
             Self::Nil => write!(f, "nil"),
             Self::True => write!(f, "true"),
             Self::False => write!(f, "false"),
+            Self::Empty => write!(f, "empty"),
         }
     }
 }
