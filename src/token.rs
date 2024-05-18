@@ -1,5 +1,5 @@
 #[derive(Debug)]
-enum TokenType {
+pub enum TokenType {
     // Single-character tokens
     LeftParen,
     RightParen,
@@ -45,7 +45,7 @@ enum TokenType {
     Eof,
 }
 
-enum Literal {
+pub enum Literal {
     Num(f64),
     Str(String),
     Nil,
@@ -65,7 +65,7 @@ impl std::fmt::Display for Literal {
     }
 }
 
-struct Token {
+pub struct Token {
     kind: TokenType,
     lexeme: String,
     literal: Option<Literal>,
@@ -73,7 +73,7 @@ struct Token {
 }
 
 impl Token {
-    fn new(kind: TokenType, lexeme: String, literal: Option<Literal>, line: u32) -> Self {
+    pub fn new(kind: TokenType, lexeme: String, literal: Option<Literal>, line: u32) -> Self {
         Self {
             kind,
             lexeme,

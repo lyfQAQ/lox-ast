@@ -1,5 +1,6 @@
 use std::io::Read;
 
+mod scanner;
 mod token;
 
 static mut HAD_ERROR: bool = false;
