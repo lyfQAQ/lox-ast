@@ -1,6 +1,7 @@
 use std::io::Read;
 
 use error::LoxError;
+use scanner::Scanner;
 
 mod error;
 mod scanner;
@@ -44,13 +45,15 @@ fn run_prompt() {
             Ok(_) => {}
             Err(m) => m.report("".to_string()),
         }
-        print!("> ");
+        print!("\n> ");
     }
 }
 
 fn run(source: String) -> Result<(), LoxError> {
-    for token in source.split_whitespace() {
-        println!("{token}");
+    let mut scan = Scanner::new(source);
+    scan.scan_tokens()?;
+    for token in scan.tokens {
+        println!("{token} ");
     }
     Ok(())
 }

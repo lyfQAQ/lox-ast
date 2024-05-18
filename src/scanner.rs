@@ -1,28 +1,49 @@
+use std::collections::HashMap;
+
 use crate::error::LoxError;
 use crate::token::*;
 
-struct Scanner {
+pub struct Scanner {
     source: Vec<char>,
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
     // the first character in the lexeme being scanned
     start: usize,
     // the character currently being considered
     current: usize,
     line: usize,
+    keywords: HashMap<String, TokenType>,
 }
 
 impl Scanner {
-    fn new(source: String) -> Self {
+    pub fn new(source: String) -> Self {
         Self {
             source: source.chars().collect(),
             tokens: Vec::new(),
             start: 0,
             current: 0,
             line: 1,
+            keywords: HashMap::from_iter([
+                ("and".to_string(), TokenType::And),
+                ("class".to_string(), TokenType::Class),
+                ("else".to_string(), TokenType::Else),
+                ("false".to_string(), TokenType::False),
+                ("true".to_string(), TokenType::True),
+                ("for".to_string(), TokenType::For),
+                ("fun".to_string(), TokenType::Fun),
+                ("if".to_string(), TokenType::If),
+                ("nil".to_string(), TokenType::Nil),
+                ("or".to_string(), TokenType::Or),
+                ("print".to_string(), TokenType::Print),
+                ("return".to_string(), TokenType::Return),
+                ("super".to_string(), TokenType::Super),
+                ("this".to_string(), TokenType::This),
+                ("var".to_string(), TokenType::Var),
+                ("while".to_string(), TokenType::While),
+            ]),
         }
     }
 
-    fn scan_tokens(&mut self) -> Result<&Vec<Token>, LoxError> {
+    pub fn scan_tokens(&mut self) -> Result<&Vec<Token>, LoxError> {
         let mut had_error: Option<LoxError> = None;
         while !self.is_end() {
             self.start = self.current;
@@ -113,6 +134,8 @@ impl Scanner {
             c if c.is_ascii_whitespace() => {}
             '"' => self.match_string()?,
             c if c.is_numeric() => self.match_number()?,
+            // 字母或下划线开头
+            c if c.is_alphabetic() || c == '_' => self.match_identifier(),
             _ => return Err(LoxError::new(self.line, "Unexpected character".to_string())),
         }
         Ok(())
@@ -193,5 +216,18 @@ impl Scanner {
             .expect("Error: Parse f64");
         self.add_token(TokenType::Number, Literal::Num(num));
         Ok(())
+    }
+
+    fn match_identifier(&mut self) {
+        while self.peek().is_alphanumeric() {
+            self.current += 1;
+        }
+        let text: String = self.source[self.start..self.current].iter().collect();
+        match self.keywords.get(&text) {
+            // 关键字
+            Some(kind) => self.add_token(kind.clone(), Literal::Empty),
+            // 标识符
+            None => self.add_token(TokenType::Identifier, Literal::Empty),
+        }
     }
 }
